@@ -2,7 +2,8 @@
   "name": "bookstore",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://RaviJupudi.github.io/BookStore",
+//  "homepage": "https://RaviJupudi.github.io/BookStore",
+  "homepage": "/",
   "dependencies": {
     "axios": "^1.8.4",
     "gh-pages": "^6.3.0",
