@@ -139,17 +139,20 @@ function App() {
   
       {/* PDF Viewer */}
       {selectedBookId && (
-        <div className="mt-10">
-          <h2 className="text-xl font-bold mb-2">📖 Reading Book</h2>
-          <iframe
-            src={`https://ebookstore-hqlf.onrender.com/books/${selectedBookId}/stream`}
-            title="PDF Viewer"
-            width="100%"
-            height="600px"
-            className="border shadow"
-          ></iframe>
-        </div>
-      )}
+  <>
+    {console.log("Opening book with ID:", selectedBookId)}
+    <div className="mt-10">
+      <h2 className="text-xl font-bold mb-2">📖 Reading Book</h2>
+      <iframe
+        src={`https://ebookstore-hqlf.onrender.com/books/${selectedBookId}/stream`}
+        title="PDF Viewer"
+        width="100%"
+        height="600px"
+        className="border shadow"
+      ></iframe>
+    </div>
+  </>
+)}
     </div>
   );
   
