@@ -100,62 +100,41 @@ function App() {
     }
   };
 
-  const handleViewBook = async (publicId) => {
+  const handleViewBook = (publicId) => {
     if (!publicId) {
       setError('Cannot view book - missing reference');
       return;
     }
     
     try {
-      // First verify the book exists
-      const bookExists = books.some(book => book.publicId === publicId);
-      if (!bookExists) {
+      // Use the URL stored in database instead of constructing it
+      const book = books.find(b => b.publicId === publicId);
+      if (!book) {
         throw new Error('Book not found in database');
       }
       
-      // Generate the direct Cloudinary URL with proper resource type
-      const viewUrl = `https://res.cloudinary.com/dafyhvdns/image/upload/${publicId}`;
-      
-      // Test if the URL is accessible
-      const testResponse = await fetch(viewUrl, { method: 'HEAD' });
-      if (!testResponse.ok) {
-        throw new Error('File not found in Cloudinary');
-      }
-      
-      // Open in new window
-      window.open(viewUrl, '_blank', 'noopener,noreferrer');
+      // Open the stored Cloudinary URL directly
+      window.open(book.url, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.error('View failed:', error);
       setError('View failed: ' + error.message);
     }
   };
 
-  const handleDownload = async (publicId) => {
+  const handleDownload = (publicId) => {
     if (!publicId) {
       setError('Cannot download book - missing reference');
       return;
     }
     
     try {
-      // First verify the book exists
-      const bookExists = books.some(book => book.publicId === publicId);
-      if (!bookExists) {
-        throw new Error('Book not found in database');
-      }
+      // Use backend download endpoint instead of direct Cloudinary URL
+      const downloadUrl = `https://ebookstore-hqlf.onrender.com/api/books/download/${publicId}`;
       
-      // Create a temporary anchor tag for download
-      const downloadUrl = `https://res.cloudinary.com/dafyhvdns/raw/upload/fl_attachment/${publicId}`;
-      
-      // Test if the URL is accessible
-      const testResponse = await fetch(downloadUrl, { method: 'HEAD' });
-      if (!testResponse.ok) {
-        throw new Error('File not found in Cloudinary');
-      }
-      
-      // Trigger download
+      // Create temporary anchor tag for download
       const a = document.createElement('a');
       a.href = downloadUrl;
-      a.download = 'download'; // You can extract filename from book data if available
+      a.download = 'download';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
