@@ -100,33 +100,69 @@ function App() {
     }
   };
 
-  const handleViewBook = (publicId) => {
+  const handleViewBook = async (publicId) => {
     if (!publicId) {
       setError('Cannot view book - missing reference');
       return;
     }
     
-    // Open Cloudinary URL directly in new window
-    const viewUrl = `https://res.cloudinary.com/dafyhvdns/auto/upload/${publicId}`;
-    window.open(viewUrl, '_blank', 'noopener,noreferrer');
+    try {
+      // First verify the book exists
+      const bookExists = books.some(book => book.publicId === publicId);
+      if (!bookExists) {
+        throw new Error('Book not found in database');
+      }
+      
+      // Generate the direct Cloudinary URL with proper resource type
+      const viewUrl = `https://res.cloudinary.com/dafyhvdns/image/upload/${publicId}`;
+      
+      // Test if the URL is accessible
+      const testResponse = await fetch(viewUrl, { method: 'HEAD' });
+      if (!testResponse.ok) {
+        throw new Error('File not found in Cloudinary');
+      }
+      
+      // Open in new window
+      window.open(viewUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('View failed:', error);
+      setError('View failed: ' + error.message);
+    }
   };
 
-  const handleDownload = (publicId) => {
+  const handleDownload = async (publicId) => {
     if (!publicId) {
       setError('Cannot download book - missing reference');
       return;
     }
     
-    // Create hidden iframe to trigger download
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = `https://ebookstore-hqlf.onrender.com/api/books/download/${publicId}`;
-    document.body.appendChild(iframe);
-    
-    // Clean up after delay
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-    }, 5000);
+    try {
+      // First verify the book exists
+      const bookExists = books.some(book => book.publicId === publicId);
+      if (!bookExists) {
+        throw new Error('Book not found in database');
+      }
+      
+      // Create a temporary anchor tag for download
+      const downloadUrl = `https://res.cloudinary.com/dafyhvdns/raw/upload/fl_attachment/${publicId}`;
+      
+      // Test if the URL is accessible
+      const testResponse = await fetch(downloadUrl, { method: 'HEAD' });
+      if (!testResponse.ok) {
+        throw new Error('File not found in Cloudinary');
+      }
+      
+      // Trigger download
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = 'download'; // You can extract filename from book data if available
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download failed:', error);
+      setError('Download failed: ' + error.message);
+    }
   };
 
   // Group books by category safely
