@@ -8,8 +8,6 @@ function App() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [viewerOpen, setViewerOpen] = useState(false);
-  const [currentViewUrl, setCurrentViewUrl] = useState('');
 
   useEffect(() => {
     fetchBooks();
@@ -108,12 +106,9 @@ function App() {
       return;
     }
     
-    // Directly open the view URL in a new tab
-    window.open(
-      `https://ebookstore-hqlf.onrender.com/api/books/view/${publicId}`,
-      '_blank',
-      'noopener,noreferrer'
-    );
+    // Open Cloudinary URL directly in new window
+    const viewUrl = `https://res.cloudinary.com/dafyhvdns/auto/upload/${publicId}`;
+    window.open(viewUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleDownload = (publicId) => {
