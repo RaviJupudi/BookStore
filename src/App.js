@@ -21,13 +21,30 @@ function App() {
   };
 
   const handleUpload = async () => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('title', title);
-    formData.append('category', category);
-    await axios.post('https://ebookstore-hqlf.onrender.com/books', formData);
-    fetchBooks();
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', title);
+      formData.append('category', category);
+  
+      const response = await axios.post(
+        'https://ebookstore-hqlf.onrender.com/books',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+  
+      alert(response.data); // show success message
+      fetchBooks(); // refresh list
+    } catch (error) {
+      console.error('Upload failed:', error.response?.data || error.message);
+      alert('Upload failed: ' + (error.response?.data || error.message));
+    }
   };
+  
 
   return (
     <div className="p-4 font-sans">
