@@ -12,11 +12,22 @@ function App() {
     fetchBooks();
   }, []);
 
-  const fetchBooks = async () => {
-    const res = await axios.get('https://ebookstore-hqlf.onrender.com/api/books');
-    setBooks(res.data);
-  };
 
+  const fetchBooks = async () => {
+    try {
+      const res = await axios.get('https://ebookstore-hqlf.onrender.com/api/books');
+      // Assuming response is an array of books
+      if (Array.isArray(res.data)) {
+        setBooks(res.data);
+      } else {
+        console.error('Invalid response format:', res.data);
+        setBooks([]);
+      }
+    } catch (error) {
+      console.error('Error fetching books:', error);
+    }
+  };
+  
   const handleUpload = async () => {
     try {
       const formData = new FormData();
