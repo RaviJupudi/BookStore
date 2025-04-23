@@ -8,7 +8,8 @@ function App() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedBook, setSelectedBook] = useState(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [currentViewUrl, setCurrentViewUrl] = useState('');
 
   useEffect(() => {
     fetchBooks();
@@ -20,7 +21,6 @@ function App() {
     try {
       const res = await axios.get('https://ebookstore-hqlf.onrender.com/api/books');
       
-      // Ensure response is an array and has the expected structure
       if (Array.isArray(res.data)) {
         const validBooks = res.data.filter(book => 
           book.publicId && book.url && book.title
@@ -65,13 +65,12 @@ function App() {
         }
       );
 
-      // Verify the response contains the book data
       if (response.data && response.data.publicId) {
         setTitle('');
         setCategory('');
         setFile(null);
         setError(null);
-        await fetchBooks(); // Refresh the list
+        await fetchBooks();
       } else {
         throw new Error('Invalid response from server after upload');
       }
@@ -93,7 +92,7 @@ function App() {
       try {
         setLoading(true);
         await axios.delete(`https://ebookstore-hqlf.onrender.com/api/books/delete/${publicId}`);
-        await fetchBooks(); // Refresh the list
+        await fetchBooks();
       } catch (error) {
         console.error('Delete failed:', error);
         setError('Delete failed: ' + (error.response?.data?.message || error.message));
@@ -103,16 +102,36 @@ function App() {
     }
   };
 
-  const handleViewBook = (book) => {
-    if (book?.publicId) {
-      setSelectedBook(book);
-    } else {
+  const handleViewBook = (publicId) => {
+    if (!publicId) {
       setError('Cannot view book - missing reference');
+      return;
     }
+    
+    // Directly open the view URL in a new tab
+    window.open(
+      `https://ebookstore-hqlf.onrender.com/api/books/view/${publicId}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
 
-  const handleCloseViewer = () => {
-    setSelectedBook(null);
+  const handleDownload = (publicId) => {
+    if (!publicId) {
+      setError('Cannot download book - missing reference');
+      return;
+    }
+    
+    // Create hidden iframe to trigger download
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = `https://ebookstore-hqlf.onrender.com/api/books/download/${publicId}`;
+    document.body.appendChild(iframe);
+    
+    // Clean up after delay
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 5000);
   };
 
   // Group books by category safely
@@ -200,7 +219,7 @@ function App() {
                       <td className="border px-4 py-2 text-left">{book.title}</td>
                       <td className="border px-4 py-2 text-center">
                         <button
-                          onClick={() => handleViewBook(book)}
+                          onClick={() => handleViewBook(book.publicId)}
                           className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 disabled:bg-green-300"
                           disabled={loading}
                         >
@@ -208,13 +227,13 @@ function App() {
                         </button>
                       </td>
                       <td className="border px-4 py-2 text-center">
-                        <a
-                          href={`https://ebookstore-hqlf.onrender.com/api/books/download/${book.publicId}`}
-                          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 inline-block"
-                          download
+                        <button
+                          onClick={() => handleDownload(book.publicId)}
+                          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:bg-blue-300"
+                          disabled={loading}
                         >
                           Download
-                        </a>
+                        </button>
                       </td>
                       <td className="border px-4 py-2 text-center">
                         <button
@@ -235,42 +254,6 @@ function App() {
       ) : (
         <div className="text-center py-8 text-gray-500">
           No books available. Upload one to get started!
-        </div>
-      )}
-
-      {/* PDF Viewer Modal */}
-      {selectedBook && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-screen flex flex-col">
-            <div className="flex justify-between items-center border-b p-4">
-              <h2 className="text-xl font-bold">{selectedBook.title}</h2>
-              <button
-                onClick={handleCloseViewer}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <iframe
-                src={`https://ebookstore-hqlf.onrender.com/api/books/view/${selectedBook.publicId}`}
-                title={selectedBook.title}
-                width="100%"
-                height="100%"
-                className="border-0"
-                style={{ minHeight: '500px' }}
-              ></iframe>
-            </div>
-            <div className="border-t p-4 flex justify-end">
-              <a
-                href={`https://ebookstore-hqlf.onrender.com/api/books/download/${selectedBook.publicId}`}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                download
-              >
-                Download
-              </a>
-            </div>
-          </div>
         </div>
       )}
     </div>
