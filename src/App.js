@@ -106,39 +106,37 @@ function App() {
       return;
     }
     
-    try {
-      // Construct proper Cloudinary viewer URL
-      const viewUrl = `https://res.cloudinary.com/dafyhvdns/image/upload/${publicId}.pdf`;
-      window.open(viewUrl, '_blank', 'noopener,noreferrer');
-    } catch (error) {
-      console.error('View failed:', error);
-      setError('View failed: ' + error.message);
-    }
+    // Use the direct Cloudinary URL with version parameter
+    const viewUrl = `https://res.cloudinary.com/dafyhvdns/image/upload/v1/${publicId}.pdf`;
+    window.open(viewUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const handleDownload = (publicId) => {
+  const handleDownload = async (publicId) => {
     if (!publicId) {
       setError('Cannot download book - missing reference');
       return;
     }
     
     try {
-      // Use backend endpoint for authenticated download
-      const downloadUrl = `https://ebookstore-hqlf.onrender.com/api/books/download/${publicId}`;
+      // First get the download URL from backend
+      const response = await axios.get(
+        `https://ebookstore-hqlf.onrender.com/api/books/download-url/${publicId}`
+      );
       
-      // Create hidden iframe to trigger download
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = downloadUrl;
-      document.body.appendChild(iframe);
-      
-      // Clean up after delay
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 5000);
+      if (response.data && response.data.downloadUrl) {
+        // Create temporary anchor tag for download
+        const a = document.createElement('a');
+        a.href = response.data.downloadUrl;
+        a.download = 'book-download.pdf'; // You can make this dynamic
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        throw new Error('Invalid download URL received');
+      }
     } catch (error) {
       console.error('Download failed:', error);
-      setError('Download failed: ' + error.message);
+      setError('Download failed: ' + (error.response?.data?.message || error.message));
     }
   };
 
