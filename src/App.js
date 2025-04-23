@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Document, Page } from 'react-pdf/dist/esm/entry.webpack';
-
-
 
 function App() {
   const [file, setFile] = useState(null);
@@ -16,8 +13,22 @@ function App() {
   }, []);
 
   const fetchBooks = async () => {
-    const res = await axios.get('https://ebookstore-hqlf.onrender.com/books');
-    setBooks(res.data);
+    try {
+      const res = await axios.get('https://ebookstore-hqlf.onrender.com/books');
+      setBooks(res.data);
+    } catch (err) {
+      console.error('Failed to fetch books:', err);
+    }
+  };
+
+  const groupByCategory = (books) => {
+    return books.reduce((acc, book) => {
+      if (!acc[book.category]) {
+        acc[book.category] = [];
+      }
+      acc[book.category].push(book);
+      return acc;
+    }, {});
   };
 
   const handleUpload = async () => {
@@ -26,7 +37,7 @@ function App() {
       formData.append('file', file);
       formData.append('title', title);
       formData.append('category', category);
-  
+
       const response = await axios.post(
         'https://ebookstore-hqlf.onrender.com/books',
         formData,
@@ -36,63 +47,89 @@ function App() {
           },
         }
       );
-  
-      alert(response.data); // show success message
-      fetchBooks(); // refresh list
+
+      alert(response.data);
+      setFile(null);
+      setTitle('');
+      setCategory('');
+      fetchBooks();
     } catch (error) {
       console.error('Upload failed:', error.response?.data || error.message);
       alert('Upload failed: ' + (error.response?.data || error.message));
     }
   };
-  
+
+  const categorizedBooks = groupByCategory(books);
 
   return (
-    <div className="p-4 font-sans">
-      <h1 className="text-2xl font-bold mb-4">Bookstore Upload & Viewer</h1>
+    <div className="p-6 font-sans max-w-5xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6 text-center">📚 Bookstore</h1>
+
+      {Object.keys(categorizedBooks).map((cat) => (
+        <div key={cat} className="mb-8">
+          <h2 className="text-xl font-semibold mb-2 text-blue-600">{cat}</h2>
+          <table className="w-full border-collapse border border-gray-300">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border border-gray-300 px-4 py-2 text-left">Title</th>
+                <th className="border border-gray-300 px-4 py-2">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categorizedBooks[cat].map((book) => (
+                <tr key={book.id} className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-4 py-2">{book.title}</td>
+                  <td className="border border-gray-300 px-4 py-2 text-center">
+                    <button
+                      onClick={() => setSelectedBookId(book.id)}
+                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+                    >
+                      View Book
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+
+      <hr className="my-8" />
 
       <div className="mb-6">
-        <input type="file" onChange={e => setFile(e.target.files[0])} className="mb-2" />
+        <h2 className="text-xl font-semibold mb-4">📤 Upload a New Book</h2>
+        <input type="file" onChange={e => setFile(e.target.files[0])} className="mb-2 block" />
         <input
           type="text"
           placeholder="Title"
           value={title}
           onChange={e => setTitle(e.target.value)}
-          className="border p-1 mr-2"
+          className="border p-2 mr-2 mb-2"
         />
         <input
           type="text"
           placeholder="Category"
           value={category}
           onChange={e => setCategory(e.target.value)}
-          className="border p-1 mr-2"
+          className="border p-2 mr-2 mb-2"
         />
-        <button onClick={handleUpload} className="bg-blue-500 text-white px-4 py-1 rounded">Upload</button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {books.map(book => (
-          <div key={book.id} className="border rounded p-2 shadow">
-            <h3 className="font-semibold">{book.title}</h3>
-            <p className="text-sm text-gray-600">{book.category}</p>
-            <button
-              onClick={() => setSelectedBookId(book.id)}
-              className="mt-2 bg-green-600 text-white px-3 py-1 rounded"
-            >
-              View Book
-            </button>
-          </div>
-        ))}
+        <button
+          onClick={handleUpload}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Upload
+        </button>
       </div>
 
       {selectedBookId && (
-        <div className="mt-8">
-          <h2 className="text-xl font-bold">Reading Book</h2>
+        <div className="mt-10">
+          <h2 className="text-xl font-bold mb-2">📖 Reading Book</h2>
           <iframe
             src={`https://ebookstore-hqlf.onrender.com/books/${selectedBookId}/stream`}
             title="PDF Viewer"
             width="100%"
             height="600px"
-            style={{ border: 'none' }}
+            style={{ border: '1px solid #ccc' }}
           ></iframe>
         </div>
       )}
