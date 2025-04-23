@@ -107,14 +107,9 @@ function App() {
     }
     
     try {
-      // Use the URL stored in database instead of constructing it
-      const book = books.find(b => b.publicId === publicId);
-      if (!book) {
-        throw new Error('Book not found in database');
-      }
-      
-      // Open the stored Cloudinary URL directly
-      window.open(book.url, '_blank', 'noopener,noreferrer');
+      // Construct proper Cloudinary viewer URL
+      const viewUrl = `https://res.cloudinary.com/dafyhvdns/image/upload/${publicId}.pdf`;
+      window.open(viewUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.error('View failed:', error);
       setError('View failed: ' + error.message);
@@ -128,16 +123,19 @@ function App() {
     }
     
     try {
-      // Use backend download endpoint instead of direct Cloudinary URL
+      // Use backend endpoint for authenticated download
       const downloadUrl = `https://ebookstore-hqlf.onrender.com/api/books/download/${publicId}`;
       
-      // Create temporary anchor tag for download
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = 'download';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      // Create hidden iframe to trigger download
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = downloadUrl;
+      document.body.appendChild(iframe);
+      
+      // Clean up after delay
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 5000);
     } catch (error) {
       console.error('Download failed:', error);
       setError('Download failed: ' + error.message);
