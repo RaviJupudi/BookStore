@@ -13,7 +13,7 @@ function App() {
   }, []);
 
   const fetchBooks = async () => {
-    const res = await axios.get('https://ebookstore-hqlf.onrender.com/books');
+    const res = await axios.get('https://ebookstore-hqlf.onrender.com/api/books');
     setBooks(res.data);
   };
 
@@ -25,7 +25,7 @@ function App() {
       formData.append('category', category);
 
       const response = await axios.post(
-        'https://ebookstore-hqlf.onrender.com/books',
+        'https://ebookstore-hqlf.onrender.com/api/books',
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -46,7 +46,7 @@ function App() {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this book?')) {
       try {
-        await axios.delete(`https://ebookstore-hqlf.onrender.com/books/${id}`);
+        await axios.delete(`https://ebookstore-hqlf.onrender.com/api/books/${id}`);
         fetchBooks();
       } catch (error) {
         alert('Delete failed: ' + (error.response?.data || error.message));
@@ -144,7 +144,7 @@ function App() {
     <div className="mt-10">
       <h2 className="text-xl font-bold mb-2">📖 Reading Book</h2>
       <iframe
-        src={`https://ebookstore-hqlf.onrender.com/books/${selectedBookId}/stream`}
+        src={`https://ebookstore-hqlf.onrender.com/api/books/${selectedBookId}/stream`}
         title="PDF Viewer"
         width="100%"
         height="600px"
