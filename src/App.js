@@ -8,6 +8,7 @@ function App() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedBook, setSelectedBook] = useState(null);
 
   useEffect(() => {
     fetchBooks();
@@ -18,10 +19,18 @@ function App() {
     setError(null);
     try {
       const res = await axios.get('https://ebookstore-hqlf.onrender.com/api/books');
-      setBooks(res.data);
+      
+      if (Array.isArray(res.data)) {
+        setBooks(res.data);
+      } else {
+        console.error('Invalid response format:', res.data);
+        setBooks([]);
+        setError('Invalid data format received from server');
+      }
     } catch (error) {
-      setError('Error fetching books: ' + error.message);
       console.error('Error fetching books:', error);
+      setError('Failed to load books. Please try again later.');
+      setBooks([]);
     } finally {
       setLoading(false);
     }
@@ -29,7 +38,11 @@ function App() {
 
   const handleUpload = async () => {
     if (!file) {
-      alert('Please select a file');
+      setError('Please select a file');
+      return;
+    }
+    if (!title.trim()) {
+      setError('Please enter a title');
       return;
     }
 
@@ -37,7 +50,7 @@ function App() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('title', title);
-      formData.append('category', category);
+      formData.append('category', category || 'Uncategorized');
 
       setLoading(true);
       await axios.post(
@@ -48,14 +61,14 @@ function App() {
         }
       );
 
-      alert('Upload successful!');
       setTitle('');
       setCategory('');
       setFile(null);
-      fetchBooks();
+      setError(null);
+      await fetchBooks();
     } catch (error) {
-      setError('Upload failed: ' + (error.response?.data?.message || error.message));
       console.error('Upload failed:', error);
+      setError('Upload failed: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -66,19 +79,29 @@ function App() {
       try {
         setLoading(true);
         await axios.delete(`https://ebookstore-hqlf.onrender.com/api/books/delete/${publicId}`);
-        fetchBooks();
+        await fetchBooks();
       } catch (error) {
-        setError('Delete failed: ' + (error.response?.data?.message || error.message));
         console.error('Delete failed:', error);
+        setError('Delete failed: ' + (error.response?.data?.message || error.message));
       } finally {
         setLoading(false);
       }
     }
   };
 
-  const booksByCategory = books.reduce((group, book) => {
-    group[book.category] = group[book.category] || [];
-    group[book.category].push(book);
+  const handleViewBook = (book) => {
+    setSelectedBook(book);
+  };
+
+  const handleCloseViewer = () => {
+    setSelectedBook(null);
+  };
+
+  // Safe booksByCategory calculation
+  const booksByCategory = (books || []).reduce((group, book) => {
+    const categoryName = book?.category || 'Uncategorized';
+    group[categoryName] = group[categoryName] || [];
+    group[categoryName].push(book);
     return group;
   }, {});
 
@@ -100,10 +123,11 @@ function App() {
             type="file" 
             onChange={e => setFile(e.target.files[0])} 
             className="border p-2 rounded"
+            accept=".pdf,.epub,.doc,.docx"
           />
           <input
             type="text"
-            placeholder="Title"
+            placeholder="Title *"
             value={title}
             onChange={e => setTitle(e.target.value)}
             className="border p-2 rounded w-full md:w-40"
@@ -115,7 +139,6 @@ function App() {
             value={category}
             onChange={e => setCategory(e.target.value)}
             className="border p-2 rounded w-full md:w-40"
-            required
           />
           <button
             onClick={handleUpload}
@@ -129,8 +152,8 @@ function App() {
 
       {/* Books Listing Section */}
       {loading && books.length === 0 ? (
-        <div className="text-center">Loading books...</div>
-      ) : (
+        <div className="text-center py-8">Loading books...</div>
+      ) : Object.keys(booksByCategory).length > 0 ? (
         Object.entries(booksByCategory).map(([category, booksInCategory]) => (
           <div key={category} className="mb-6">
             <h3 className="text-xl font-bold mb-2">{category}</h3>
@@ -138,7 +161,7 @@ function App() {
               <thead className="bg-gray-100">
                 <tr>
                   <th className="border px-4 py-2 text-left">Title</th>
-                  <th className="border px-4 py-2">View/Open Book</th>
+                  <th className="border px-4 py-2">View</th>
                   <th className="border px-4 py-2">Download</th>
                   <th className="border px-4 py-2">Delete</th>
                 </tr>
@@ -148,19 +171,18 @@ function App() {
                   <tr key={book.publicId} className="text-center">
                     <td className="border px-4 py-2 text-left">{book.title}</td>
                     <td className="border px-4 py-2">
-                      <a
-                        href={`https://ebookstore-hqlf.onrender.com/api/books/view/${book.publicId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => handleViewBook(book)}
                         className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
                       >
                         View
-                      </a>
+                      </button>
                     </td>
                     <td className="border px-4 py-2">
                       <a
                         href={`https://ebookstore-hqlf.onrender.com/api/books/download/${book.publicId}`}
                         className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                        download
                       >
                         Download
                       </a>
@@ -180,6 +202,45 @@ function App() {
             </table>
           </div>
         ))
+      ) : (
+        <div className="text-center py-8">
+          No books available. Upload one to get started!
+        </div>
+      )}
+
+      {/* PDF Viewer Modal */}
+      {selectedBook && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-screen overflow-hidden">
+            <div className="flex justify-between items-center border-b p-4">
+              <h2 className="text-xl font-bold">{selectedBook.title}</h2>
+              <button
+                onClick={handleCloseViewer}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4">
+              <iframe
+                src={`https://ebookstore-hqlf.onrender.com/api/books/view/${selectedBook.publicId}`}
+                title={selectedBook.title}
+                width="100%"
+                height="600px"
+                className="border shadow"
+              ></iframe>
+            </div>
+            <div className="border-t p-4 flex justify-end">
+              <a
+                href={`https://ebookstore-hqlf.onrender.com/api/books/download/${selectedBook.publicId}`}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                download
+              >
+                Download
+              </a>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
