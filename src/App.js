@@ -61,49 +61,60 @@ function App() {
   }, {});
 
   return (
-    <div className="p-6 font-sans max-w-5xl mx-auto">
+    <div className="p-6 max-w-4xl mx-auto font-sans">
       <h1 className="text-3xl font-bold mb-6 text-center">📚 Bookstore Upload & Viewer</h1>
-
+  
       {/* Upload Section */}
-      <div className="mb-8 border p-4 rounded shadow">
+      <div className="bg-gray-50 p-4 rounded shadow mb-8">
         <h2 className="text-xl font-semibold mb-4">Upload a New Book</h2>
-        <input type="file" onChange={e => setFile(e.target.files[0])} className="mb-2 block" />
-        <input
-          type="text"
-          placeholder="Title"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          className="border p-2 mr-2"
-        />
-        <input
-          type="text"
-          placeholder="Category"
-          value={category}
-          onChange={e => setCategory(e.target.value)}
-          className="border p-2 mr-2"
-        />
-        <button onClick={handleUpload} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-          Upload
-        </button>
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+          <input type="file" onChange={e => setFile(e.target.files[0])} />
+          <input
+            type="text"
+            placeholder="Title"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            className="border p-2 rounded w-full md:w-40"
+          />
+          <input
+            type="text"
+            placeholder="Category"
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+            className="border p-2 rounded w-full md:w-40"
+          />
+          <button
+            onClick={handleUpload}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Upload
+          </button>
+        </div>
       </div>
-
-      {/* Books Section */}
-      {Object.entries(booksByCategory).map(([cat, books]) => (
-        <div key={cat} className="mb-10">
-          <h2 className="text-xl font-semibold mb-3 border-b pb-1">{cat}</h2>
-          <table className="w-full border-collapse border border-gray-400">
+  
+      {/* Books Listing Section */}
+      {Object.entries(
+        books.reduce((acc, book) => {
+          acc[book.category] = acc[book.category] || [];
+          acc[book.category].push(book);
+          return acc;
+        }, {})
+      ).map(([category, booksInCategory]) => (
+        <div key={category} className="mb-6">
+          <h3 className="text-xl font-bold mb-2">{category}</h3>
+          <table className="w-full border border-gray-300">
             <thead className="bg-gray-100">
               <tr>
-                <th className="border border-gray-300 px-4 py-2 text-left">Title</th>
-                <th className="border border-gray-300 px-4 py-2 text-center">View/Open Book</th>
-                <th className="border border-gray-300 px-4 py-2 text-center">Delete</th>
+                <th className="border px-4 py-2 text-left">Title</th>
+                <th className="border px-4 py-2">View/Open Book</th>
+                <th className="border px-4 py-2">Delete</th>
               </tr>
             </thead>
             <tbody>
-              {books.map(book => (
-                <tr key={book.id} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 px-4 py-2">{book.title}</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">
+              {booksInCategory.map(book => (
+                <tr key={book.id} className="text-center">
+                  <td className="border px-4 py-2 text-left">{book.title}</td>
+                  <td className="border px-4 py-2">
                     <button
                       onClick={() => setSelectedBookId(book.id)}
                       className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
@@ -111,10 +122,10 @@ function App() {
                       View
                     </button>
                   </td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">
+                  <td className="border px-4 py-2">
                     <button
                       onClick={() => handleDelete(book.id)}
-                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
                     >
                       Delete
                     </button>
@@ -125,22 +136,23 @@ function App() {
           </table>
         </div>
       ))}
-
-      {/* Viewer Section */}
+  
+      {/* PDF Viewer */}
       {selectedBookId && (
         <div className="mt-10">
-          <h2 className="text-xl font-semibold mb-2">📖 Reading Book</h2>
+          <h2 className="text-xl font-bold mb-2">📖 Reading Book</h2>
           <iframe
             src={`https://ebookstore-hqlf.onrender.com/books/${selectedBookId}/stream`}
             title="PDF Viewer"
             width="100%"
             height="600px"
-            style={{ border: '1px solid #ccc' }}
+            className="border shadow"
           ></iframe>
         </div>
       )}
     </div>
   );
+  
 }
 
 export default App;
